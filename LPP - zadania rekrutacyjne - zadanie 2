@@ -1,0 +1,142 @@
+### LPP - zadania rekrutacyjne na stanowisko Data Analyst – Marketing Science w marce Reserved - zadanie 2
+# Wykonałem to zadanie w Oracle SQL Developer i MySQL Workbench, aby pokazać, że znam różnice między dialektami SQL używanymi w tych dwóch systemach zarządzania bazami danych (DBMS). Kody napisane w tych dwóch systemach DBMS wykonują te same polecenia.
+# Wykonałem to zadanie w dwóch wersjach. 
+# W pierwszej wersji w systemie DBMS tworzę tabelę zawierającą dane z zadania rekrutacyjnego, którą później zwracam razem z dodatkową kolumnę z poprzednią liczbą qty dla wcześniejszego zamówienia danego klienta. 
+# W drugiej wersji także tworzę tabelę zawierającą dane z zadania rekrutacyjnego, ale później dodaję do tej tabeli tę dodatkową kolumnę z poprzednią liczbą qty dla wcześniejszego zamówienia danego klienta. Dopiero końcowym zapytaniem zwracam tę zmodyfikowaną tabelę z dodatkową kolumną.
+
+### Kod z Oracle SQL Developer - Wersja 1 (krótsza):
+
+-- Stworzenie tabeli Orders dla zamówień podanych w treści zadania rekrutacyjnego
+CREATE TABLE orders(client_id INT, order_id INT, order_time DATE, qty INT)
+;
+
+-- Wstawienie danych do tabeli Orders poprzez INSERT ALL
+INSERT ALL
+    INTO orders(client_id, order_id, order_time, qty) VALUES(1, 12223, TO_DATE('2022-01-01', 'YYYY-MM-DD'), 3)
+    INTO orders(client_id, order_id, order_time, qty) VALUES(2, 12224, TO_DATE('2022-01-02', 'YYYY-MM-DD'), 2)
+    INTO orders(client_id, order_id, order_time, qty) VALUES(3, 12225, TO_DATE('2022-01-03', 'YYYY-MM-DD'), 6)
+    INTO orders(client_id, order_id, order_time, qty) VALUES(4, 12226, TO_DATE('2022-01-04', 'YYYY-MM-DD'), 23)
+    INTO orders(client_id, order_id, order_time, qty) VALUES(1, 12227, TO_DATE('2022-01-05', 'YYYY-MM-DD'), 2)
+    INTO orders(client_id, order_id, order_time, qty) VALUES(2, 12228, TO_DATE('2022-01-06', 'YYYY-MM-DD'), 12)
+    INTO orders(client_id, order_id, order_time, qty) VALUES(1, 12229, TO_DATE('2022-01-07', 'YYYY-MM-DD'), 2)
+    INTO orders(client_id, order_id, order_time, qty) VALUES(3, 12230, TO_DATE('2022-01-08', 'YYYY-MM-DD'), 3)
+    INTO orders(client_id, order_id, order_time, qty) VALUES(4, 12231, TO_DATE('2022-01-09', 'YYYY-MM-DD'), 45)
+    INTO orders(client_id, order_id, order_time, qty) VALUES(5, 12232, TO_DATE('2022-01-10', 'YYYY-MM-DD'), 23)
+SELECT 1 FROM DUAL
+;
+
+-- Wyświetlenie zawartości tabeli Orders razem z dodatkową kolumną z poprzednią liczbą qty dla wcześniejszego zamówienia danego klienta
+SELECT client_id, order_id, order_time, qty, LAG(qty, 1) OVER (PARTITION BY client_id ORDER BY order_time) AS previous_qty
+FROM orders
+ORDER BY client_id, order_time
+;
+
+### Kod z Oracle SQL Developer - Wersja 2 (dłuższa):
+
+-- Stworzenie tabeli Orders dla zamówień podanych w treści zadania rekrutacyjnego
+CREATE TABLE orders(client_id INT, order_id INT, order_time DATE, qty INT)
+;
+
+-- Wstawienie danych do tabeli Orders poprzez INSERT ALL
+INSERT ALL
+    INTO orders(client_id, order_id, order_time, qty) VALUES(1, 12223, TO_DATE('2022-01-01', 'YYYY-MM-DD'), 3)
+    INTO orders(client_id, order_id, order_time, qty) VALUES(2, 12224, TO_DATE('2022-01-02', 'YYYY-MM-DD'), 2)
+    INTO orders(client_id, order_id, order_time, qty) VALUES(3, 12225, TO_DATE('2022-01-03', 'YYYY-MM-DD'), 6)
+    INTO orders(client_id, order_id, order_time, qty) VALUES(4, 12226, TO_DATE('2022-01-04', 'YYYY-MM-DD'), 23)
+    INTO orders(client_id, order_id, order_time, qty) VALUES(1, 12227, TO_DATE('2022-01-05', 'YYYY-MM-DD'), 2)
+    INTO orders(client_id, order_id, order_time, qty) VALUES(2, 12228, TO_DATE('2022-01-06', 'YYYY-MM-DD'), 12)
+    INTO orders(client_id, order_id, order_time, qty) VALUES(1, 12229, TO_DATE('2022-01-07', 'YYYY-MM-DD'), 2)
+    INTO orders(client_id, order_id, order_time, qty) VALUES(3, 12230, TO_DATE('2022-01-08', 'YYYY-MM-DD'), 3)
+    INTO orders(client_id, order_id, order_time, qty) VALUES(4, 12231, TO_DATE('2022-01-09', 'YYYY-MM-DD'), 45)
+    INTO orders(client_id, order_id, order_time, qty) VALUES(5, 12232, TO_DATE('2022-01-10', 'YYYY-MM-DD'), 23)
+SELECT 1 FROM DUAL
+;
+
+-- Dodanie nowej kolumny previous_qty do tabeli Orders
+ALTER TABLE orders 
+ADD previous_qty INT
+;
+
+-- Wstawienie do kolumny previous_qty, za pomocą podzapytania z funkcją LAG, wartości, którymi są poprzednie liczby qty dla wcześniejszego zamówienia danego klienta
+MERGE INTO orders o1
+USING(
+    SELECT client_id, order_id, LAG(qty, 1) OVER (PARTITION BY client_id ORDER BY order_time) AS previous_qty
+    FROM orders
+) o2
+ON (o1.client_id = o2.client_id AND o1.order_id = o2.order_id)
+WHEN MATCHED THEN 
+UPDATE SET o1.previous_qty = o2.previous_qty
+;
+
+-- Zapytanie wyciągające zawartość tabeli Orders posortowaną po client_id i order_time
+SELECT *
+FROM orders
+ORDER BY client_id, order_time
+;
+
+### Kod z MySQL Workbench - Wersja 1 (krótsza):
+
+-- Stworzenie tabeli Orders dla zamówień podanych w treści zadania rekrutacyjnego
+CREATE TABLE orders(client_id INT, order_id INT, order_time DATE, qty INT)
+;
+
+-- Wstawianie danych do tabeli
+INSERT INTO orders(client_id, order_id, order_time, qty) VALUES
+(1, 12223, '2022-01-01', 3),
+(2, 12224, '2022-01-02', 2),
+(3, 12225, '2022-01-03', 6),
+(4, 12226, '2022-01-04', 23),
+(1, 12227, '2022-01-05', 2),
+(2, 12228, '2022-01-06', 12),
+(1, 12229, '2022-01-07', 2),
+(3, 12230, '2022-01-08', 3),
+(4, 12231, '2022-01-09', 45),
+(5, 12232, '2022-01-10', 23)
+;
+
+-- Wyświetlenie zawartości tabeli Orders razem z dodatkową kolumną z poprzednią liczbą qty dla wcześniejszego zamówienia danego klienta
+SELECT client_id, order_id, order_time, qty, LAG(qty, 1) OVER (PARTITION BY client_id ORDER BY order_time) AS previous_qty
+FROM orders
+ORDER BY client_id, order_time
+;
+
+### Kod z MySQL Workbench - Wersja 2 (dłuższa):
+
+-- Stworzenie tabeli Orders dla zamówień podanych w treści zadania rekrutacyjnego
+CREATE TABLE orders(client_id INT, order_id INT, order_time DATE, qty INT)
+;
+
+-- Wstawianie danych do tabeli
+INSERT INTO orders(client_id, order_id, order_time, qty) VALUES
+(1, 12223, '2022-01-01', 3),
+(2, 12224, '2022-01-02', 2),
+(3, 12225, '2022-01-03', 6),
+(4, 12226, '2022-01-04', 23),
+(1, 12227, '2022-01-05', 2),
+(2, 12228, '2022-01-06', 12),
+(1, 12229, '2022-01-07', 2),
+(3, 12230, '2022-01-08', 3),
+(4, 12231, '2022-01-09', 45),
+(5, 12232, '2022-01-10', 23)
+;
+
+-- Dodanie nowej kolumny previous_qty do tabeli Orders
+ALTER TABLE orders 
+ADD previous_qty INT
+;
+
+-- Wstawienie do kolumny previous_qty, za pomocą podzapytania z funkcją LAG, wartości, którymi są poprzednie liczby qty dla wcześniejszego zamówienia danego klienta
+UPDATE orders o1
+JOIN(
+    SELECT client_id, order_id, LAG(qty, 1) OVER (PARTITION BY client_id ORDER BY order_time) AS previous_qty
+    FROM orders
+) o2 
+ON o1.client_id = o2.client_id AND o1.order_id = o2.order_id
+SET o1.previous_qty = o2.previous_qty
+;
+
+-- Zapytanie wyciągające zawartość tabeli Orders posortowaną po client_id i order_time
+SELECT *
+FROM orders
+ORDER BY client_id, order_time
+;
