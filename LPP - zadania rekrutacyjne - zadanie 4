@@ -1,0 +1,165 @@
+### LPP - zadania rekrutacyjne na stanowisko Data Analyst – Marketing Science w marce Reserved - zadanie 4
+!!! Interpretacja treści zadania !!! - Zrozumiałem to zadanie tak, że wartościami nowej kolumny mają być sumy qty każdego produktu za poprzednie 6 dni razem z bieżącym dniem. Przykładowo, dla wiersza z order_date: 2023-04-11 i produkct_id: 1123, wartością w nowej kolumnie będzie suma qty każdego produktu o product_id: 1123, od 2023-04-11 (włącznie) do 2023-04-05.
+
+# Wykonałem to zadanie w Oracle SQL Developer i MySQL Workbench, aby pokazać, że znam różnice między dialektami SQL używanymi w tych dwóch systemach zarządzania bazami danych (DBMS). Kody napisane w tych dwóch systemach DBMS wykonują te same polecenia.
+# Wykonałem to zadanie w dwóch wersjach. 
+# W pierwszej wersji w systemie DBMS tworzę tabelę zawierającą dane z zadania rekrutacyjnego, którą później zwracam razem z dodatkową kolumnę z sumą qty każdego produktu za poprzednie 6 dni i bieżącego dnia:
+# W drugiej wersji także tworzę tabelę zawierającą dane z zadania rekrutacyjnego, ale później dodaję do tej tabeli tę dodatkową kolumnę z sumą qty każdego produktu za poprzednie 6 dni i bieżącego dnia. Dopiero końcowym zapytaniem zwracam tę zmodyfikowaną tabelę z dodatkową kolumną.
+
+### Kod z Oracle SQL Developer - Wersja 1 (krótsza):
+
+-- Stworzenie tabeli ORDERS2 dla zamówień podanych w treści zadania rekrutacyjnego
+CREATE TABLE orders2(order_date DATE, product_id INT, qty INT)
+;
+
+-- Wstawienie danych do tabeli ORDERS2 poprzez INSERT ALL
+INSERT ALL
+    INTO orders2(order_date, product_id, qty) VALUES(TO_DATE('2023-04-01', 'YYYY-MM-DD'), 1123, 2)
+    INTO orders2(order_date, product_id, qty) VALUES(TO_DATE('2023-04-02', 'YYYY-MM-DD'), 1123, 1)
+    INTO orders2(order_date, product_id, qty) VALUES(TO_DATE('2023-04-01', 'YYYY-MM-DD'), 1141, 1)
+    INTO orders2(order_date, product_id, qty) VALUES(TO_DATE('2023-04-02', 'YYYY-MM-DD'), 1151, 1)
+    INTO orders2(order_date, product_id, qty) VALUES(TO_DATE('2023-04-03', 'YYYY-MM-DD'), 1123, 2)
+    INTO orders2(order_date, product_id, qty) VALUES(TO_DATE('2023-04-03', 'YYYY-MM-DD'), 1141, 1)
+    INTO orders2(order_date, product_id, qty) VALUES(TO_DATE('2023-04-05', 'YYYY-MM-DD'), 1151, 3)
+    INTO orders2(order_date, product_id, qty) VALUES(TO_DATE('2023-04-06', 'YYYY-MM-DD'), 1151, 1)
+    INTO orders2(order_date, product_id, qty) VALUES(TO_DATE('2023-04-09', 'YYYY-MM-DD'), 1122, 1)
+    INTO orders2(order_date, product_id, qty) VALUES(TO_DATE('2023-04-09', 'YYYY-MM-DD'), 1151, 2)
+    INTO orders2(order_date, product_id, qty) VALUES(TO_DATE('2023-04-10', 'YYYY-MM-DD'), 1122, 3)
+    INTO orders2(order_date, product_id, qty) VALUES(TO_DATE('2023-04-10', 'YYYY-MM-DD'), 1141, 1)
+    INTO orders2(order_date, product_id, qty) VALUES(TO_DATE('2023-04-10', 'YYYY-MM-DD'), 1151, 1)
+    INTO orders2(order_date, product_id, qty) VALUES(TO_DATE('2023-04-10', 'YYYY-MM-DD'), 1123, 2)
+    INTO orders2(order_date, product_id, qty) VALUES(TO_DATE('2023-04-11', 'YYYY-MM-DD'), 1123, 4)
+SELECT 1 FROM DUAL
+;
+
+-- Wyświetlenie zawartości tabeli ORDERS2 razem z dodatkową kolumną z sumą qty każdego produktu za poprzednie 6 dni i bieżącego dnia
+SELECT order_date, product_id, qty, SUM(qty) OVER (PARTITION BY product_id ORDER BY order_date RANGE BETWEEN INTERVAL '6' DAY PRECEDING AND CURRENT ROW) AS sum_qty_last_7_days
+FROM orders2
+ORDER BY order_date, product_id
+;
+
+### Kod z Oracle SQL Developer - Wersja 2 (dłuższa):
+
+-- Stworzenie tabeli ORDERS2 dla zamówień podanych w treści zadania rekrutacyjnego
+CREATE TABLE orders2(order_date DATE, product_id INT, qty INT)
+;
+
+-- Wstawienie danych do tabeli ORDERS2 poprzez INSERT ALL
+INSERT ALL
+    INTO orders2(order_date, product_id, qty) VALUES(TO_DATE('2023-04-01', 'YYYY-MM-DD'), 1123, 2)
+    INTO orders2(order_date, product_id, qty) VALUES(TO_DATE('2023-04-02', 'YYYY-MM-DD'), 1123, 1)
+    INTO orders2(order_date, product_id, qty) VALUES(TO_DATE('2023-04-01', 'YYYY-MM-DD'), 1141, 1)
+    INTO orders2(order_date, product_id, qty) VALUES(TO_DATE('2023-04-02', 'YYYY-MM-DD'), 1151, 1)
+    INTO orders2(order_date, product_id, qty) VALUES(TO_DATE('2023-04-03', 'YYYY-MM-DD'), 1123, 2)
+    INTO orders2(order_date, product_id, qty) VALUES(TO_DATE('2023-04-03', 'YYYY-MM-DD'), 1141, 1)
+    INTO orders2(order_date, product_id, qty) VALUES(TO_DATE('2023-04-05', 'YYYY-MM-DD'), 1151, 3)
+    INTO orders2(order_date, product_id, qty) VALUES(TO_DATE('2023-04-06', 'YYYY-MM-DD'), 1151, 1)
+    INTO orders2(order_date, product_id, qty) VALUES(TO_DATE('2023-04-09', 'YYYY-MM-DD'), 1122, 1)
+    INTO orders2(order_date, product_id, qty) VALUES(TO_DATE('2023-04-09', 'YYYY-MM-DD'), 1151, 2)
+    INTO orders2(order_date, product_id, qty) VALUES(TO_DATE('2023-04-10', 'YYYY-MM-DD'), 1122, 3)
+    INTO orders2(order_date, product_id, qty) VALUES(TO_DATE('2023-04-10', 'YYYY-MM-DD'), 1141, 1)
+    INTO orders2(order_date, product_id, qty) VALUES(TO_DATE('2023-04-10', 'YYYY-MM-DD'), 1151, 1)
+    INTO orders2(order_date, product_id, qty) VALUES(TO_DATE('2023-04-10', 'YYYY-MM-DD'), 1123, 2)
+    INTO orders2(order_date, product_id, qty) VALUES(TO_DATE('2023-04-11', 'YYYY-MM-DD'), 1123, 4)
+SELECT 1 FROM DUAL
+;
+
+-- Dodanie nowej kolumny sum_qty_last_7_days do tabeli ORDERS2
+ALTER TABLE orders2
+ADD sum_qty_last_7_days INT;
+;
+
+-- Wstawienie do kolumny sum_qty_last_7_days, poprzez podzapytanie, wartości, którymi są sumy qty każdego produktu za poprzednie 7 dni i bieżącego dnia
+UPDATE orders2 o1
+SET sum_qty_last_7_days = (
+    SELECT SUM(qty)
+    FROM orders2 o2
+    WHERE o2.product_id = o1.product_id AND o2.order_date BETWEEN o1.order_date - INTERVAL '6' DAY AND o1.order_date
+);
+
+-- Zapytanie wyciągające zawartość tabeli ORDERS2 posortowaną po order_date i product_id
+SELECT *
+FROM orders2
+ORDER BY order_date, product_id
+;
+
+### Kod z MySQL Workbench - Wersja 1 (krótsza):
+
+-- Stworzenie tabeli ORDERS2 dla zamówień podanych w treści zadania rekrutacyjnego
+CREATE TABLE orders2(order_date DATE, product_id INT, qty INT)
+;
+
+-- Wstawianie danych do tabeli ORDERS2
+INSERT INTO orders2(order_date, product_id, qty) VALUES
+('2023-04-01', 1123, 2),
+('2023-04-02', 1123, 1),
+('2023-04-01', 1141, 1),
+('2023-04-02', 1151, 1),
+('2023-04-03', 1123, 2),
+('2023-04-03', 1141, 1),
+('2023-04-05', 1151, 3),
+('2023-04-06', 1151, 1),
+('2023-04-09', 1122, 1),
+('2023-04-09', 1151, 2),
+('2023-04-10', 1122, 3),
+('2023-04-10', 1141, 1),
+('2023-04-10', 1151, 1),
+('2023-04-10', 1123, 2),
+('2023-04-11', 1123, 4)
+;
+
+-- Wyświetlenie zawartości tabeli ORDERS2 razem z dodatkową kolumną z sumą qty każdego produktu za poprzednie 6 dni i bieżącego dnia
+SELECT o1.order_date, o1.product_id, o1.qty,
+    (SELECT SUM(o2.qty)
+	FROM orders2 o2
+	WHERE o2.product_id = o1.product_id AND o2.order_date BETWEEN DATE_SUB(o1.order_date, INTERVAL 6 DAY) AND o1.order_date
+    ) AS sum_qty_last_7_days
+FROM orders2 o1
+ORDER BY o1.order_date, o1.product_id
+;
+
+### Kod z MySQL Workbench - Wersja 2 (dłuższa):
+
+-- Stworzenie tabeli ORDERS2 dla zamówień podanych w treści zadania rekrutacyjnego
+CREATE TABLE orders2(order_date DATE, product_id INT, qty INT)
+;
+
+-- Wstawianie danych do tabeli ORDERS2
+INSERT INTO orders2(order_date, product_id, qty) VALUES
+('2023-04-01', 1123, 2),
+('2023-04-02', 1123, 1),
+('2023-04-01', 1141, 1),
+('2023-04-02', 1151, 1),
+('2023-04-03', 1123, 2),
+('2023-04-03', 1141, 1),
+('2023-04-05', 1151, 3),
+('2023-04-06', 1151, 1),
+('2023-04-09', 1122, 1),
+('2023-04-09', 1151, 2),
+('2023-04-10', 1122, 3),
+('2023-04-10', 1141, 1),
+('2023-04-10', 1151, 1),
+('2023-04-10', 1123, 2),
+('2023-04-11', 1123, 4)
+;
+
+-- Dodanie nowej kolumny sum_qty_last_7_days do tabeli ORDERS2
+ALTER TABLE orders2 
+ADD sum_qty_last_7_days INT
+;
+
+-- Wstawienie do kolumny sum_qty_last_7_days, poprzez podzapytanie, wartości, którymi są sumy qty każdego produktu za poprzednie 6 dni i bieżącego dnia
+UPDATE orders2 o1
+JOIN(
+    SELECT o2.product_id, o2.order_date, SUM(o2.qty) OVER (PARTITION BY o2.product_id ORDER BY o2.order_date RANGE BETWEEN INTERVAL 6 DAY PRECEDING AND CURRENT ROW) AS sum_qty_last_7_days
+    FROM orders2 o2
+) o2 
+ON o1.product_id = o2.product_id AND o1.order_date = o2.order_date
+SET o1.sum_qty_last_7_days = o2.sum_qty_last_7_days
+;
+
+-- Zapytanie wyciągające zawartość tabeli ORDERS2 posortowaną po order_date i product_id
+SELECT *
+FROM orders2
+ORDER BY order_date, product_id
+;
