@@ -1,0 +1,116 @@
+### LPP - zadania rekrutacyjne na stanowisko Data Analyst – Marketing Science w marce Reserved - zadanie 5
+!!! Interpretacja treści zadania !!! - W przesłanym do mnie pliku zadanie_rekrutacyjne.csv wiele (order_id) dla tego samego (customer_id) się powtarza. Przy tym samym (order_id) dla tego samego (customer_id) zmienia się tylko (product_id), (revenue) i (units). Zatem za nowe transakcje tego samego (customer_id) uznawałem tylko te, co miały unikatowe (order_id).
+Przykładowo, (customer_id: 12) ma 9 powiązanych transakcji (order_id), a tylko 4 z nich były unikatowe. Zatem podczas wydobywania źródeł (source) transakcji danego (customer_id) patrzyłem tylko na unikatowe transakcje tego (customer_id). Czyli, jeśli raz wydobyłem (source) konkretnego (order_id) danego (customer_id), to już dla tego samego (order_id) go nie wydobywałem.
+
+Posortowane po (customer_id) i (date) transakcje, customer_id: 12:
+order_id: 4103, date: 23/02/08 07:10:10, customer_id: 12, source: app <--- unikatowa transakcja (pierwsze wystąpienie tego (order_id), w posortowanym po (customer_id) i (date) zbiorze danych), source: app
+order_id: 4103, date: 23/02/08 07:10:10, customer_id: 12, source: app
+order_id: 266, date: 23/02/21 18:26:33, customer_id: 12, source: web <--- unikatowa transakcja, source: web
+order_id: 266, date: 23/02/21 18:26:33, customer_id: 12, source: web
+order_id: 266, date: 23/02/21 18:26:33, customer_id: 12, source: web
+order_id: 266, date: 23/02/21 18:26:33, customer_id: 12, source: web
+order_id: 266, date: 23/02/21 18:26:33, customer_id: 12, source: web
+order_id: 803, date: 23/02/24 04:22:05, customer_id: 12, source: web <--- unikatowa transakcja, source: web
+order_id: 4227, date: 23/03/14 04:05:46, customer_id: 12, source: app <--- unikatowa transakcja, source: app
+
+Posortowane po (customer_id) i (date) źródła (source) unikatowych transakcji customer_id: 12:  1. app, 2. web, 3. web, 4. app.
+
+# Wykonałem to zadanie w Oracle SQL Developer.
+# Znak "--" oznacza komentarz w SQL. W każdym owym komentarzu wyjaśniłem fragment kodu, który znajduje się pod nim.
+
+-- Stworzenie tabeli CLIENTS z określonymi na podstawie przesłanego do mnie pliku zadanie_rekrutacyjne.csv kolumnami i ich odpowiednimi typami danych.
+CREATE TABLE clients(
+    order_id INT,
+    order_date TIMESTAMP,
+    customer_id INT,
+    product_id INT,
+    revenue NUMBER(7,2),
+    units INT,
+    source VARCHAR2(6)
+);
+
+-- Zmienienie formatu liczbowego dla tej sesji. Po załadowaniu poniższego zapytania, dla tej sesji kropka oznaczać będzie separator dziesiętny, a spacja separator grupy tysięcy. Musiałem zmienić ten format liczbowy, bo dalszy kod by mi nie zadziałał.
+ALTER SESSION SET NLS_NUMERIC_CHARACTERS = '. ';
+
+### Po załączeniu powyższych zapytań zaimportowałem do tabeli CLIENTS przesłane do mnie dane z pliku zadanie_rekrutacyjne.csv.
+### Dopiero po zaimportowaniu tych danych do tabeli CLIENTS napisałem cały poniższy kod.
+
+-- Wyliczenie ilości unikalnych zamówień dla każdego klienta.
+WITH clients_transactions_count AS (
+    SELECT customer_id, COUNT(DISTINCT order_id) AS unique_order_id_count
+    FROM clients
+    GROUP BY customer_id
+),
+
+-- Znalezienie klientów z co najmniej 3 unikalnymi zamówieniami i pobranie szczegółów tych zamówień.
+clients_with_at_least_3_transactions AS (
+    SELECT c.customer_id, c.order_id, c.order_date, c.source
+    FROM clients c
+    JOIN clients_transactions_count ctc
+    ON c.customer_id = ctc.customer_id
+    WHERE ctc.unique_order_id_count >= 3
+),
+
+-- Znalezienie daty pierwszego zamówienia dla każdego klienta z co najmniej 3 unikalnymi zamówieniami.
+client_first_transaction AS (
+    SELECT customer_id, MIN(order_date) AS first_date
+    FROM clients
+    WHERE customer_id IN (SELECT customer_id 
+                          FROM clients_with_at_least_3_transactions)
+    GROUP BY CUSTOMER_ID
+),
+
+-- Filtr, który pobiera szczegóły tylko pierwszego zamówienia każdego klienta (z co najmniej 3 unikalnymi zamówieniami), jeśli jego źródło (source) pochodziło z "app".
+client_first_transaction_source AS (
+    SELECT cft.customer_id, c.source AS first_source, cft.first_date
+    FROM client_first_transaction cft
+    JOIN clients c
+    ON cft.customer_id = c.customer_id AND cft.first_date = c.order_date
+    WHERE c.source = 'app'
+),
+
+-- Znalezienie daty drugiego zamówienia dla każdego klienta (z co najmniej 3 unikalnymi zamówieniami), które odbyło się po dacie pierwszego zamówienia, pod warunkiem, że to pierwsze zamówienie pochodziło z "app".
+client_second_transaction AS (
+    SELECT c.customer_id, MIN(c.order_date) AS second_date
+    FROM clients c
+    JOIN client_first_transaction_source cfts
+    ON c.customer_id = cfts.customer_id
+    WHERE c.order_date > cfts.first_date
+    GROUP BY c.customer_id
+),
+
+-- Filtr, który pobiera szczegóły tego drugiego zamówienia każdego klienta (z co najmniej 3 unikalnymi zamówieniami), jeśli jego źródło (source) było inne niż "app".
+client_second_transaction_source AS (
+    SELECT cst.customer_id, c.source AS second_source, cst.second_date
+    FROM client_second_transaction cst
+    JOIN clients c
+    ON cst.customer_id = c.customer_id AND cst.second_date = c.order_date
+    JOIN client_first_transaction_source cfts
+    ON cst.customer_id = cfts.customer_id
+    WHERE c.source != cfts.first_source
+),
+
+-- Znalezienie tych klientów, którzy złożyli co najmniej dwa kolejne zamówienia z tego samego źródła, np. dwa razy z rzędu złożyli zamówienie z "web".
+client_consecutive_transactions AS (
+    SELECT customer_id, COUNT(*) AS consecutive_count
+    FROM (SELECT order_id, customer_id, source, LAG(source) OVER (PARTITION BY customer_id ORDER BY order_date) AS previous_source, order_date
+          FROM (SELECT DISTINCT order_id, customer_id, source, order_date
+                FROM clients
+          )
+    )
+    WHERE source = previous_source
+    GROUP BY customer_id
+),
+
+-- Znalezienie klientów, którzy spełniają wszystkie warunki: pierwsze zamówienie z "app", drugie z "web", złożyli co najmniej dwa kolejne zamówienie z tego samego źródła, ale niekoniecznie od razu po drugim zamówieniu, np 1 "app", 2 "web", 3 "app", 4 "app".
+clients_found AS (
+    SELECT DISTINCT csts.customer_id
+    FROM client_second_transaction_source csts
+    JOIN client_consecutive_transactions cct
+    ON csts.customer_id = cct.customer_id
+)
+
+-- Wypisanie łącznej ilości klientów, którzy spełnili owe warunki. Łącznie tych klientów jest 89.
+SELECT COUNT(*) AS clients_found
+FROM clients_found
+;
