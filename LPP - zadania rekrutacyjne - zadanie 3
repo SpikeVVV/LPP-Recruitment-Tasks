@@ -1,0 +1,25 @@
+### LPP - zadania rekrutacyjne na stanowisko Data Analyst – Marketing Science w marce Reserved - zadanie 3
+# Zapytanie SQL z treści zadania 3:
+
+SELECT customer_id,
+AVG(revenue)
+FROM x
+WHERE AVG(revenue) > 75
+GROUP BY customer_id
+
+# Problem w tym zapytaniu SQL polega na tym, że klauzula WHERE nie może być stosowana do filtrowania wyników, które są agregowane. W tym przypadku agregacja polega na obliczeniu średniej (AVG) z kolumny "revenue" z tabeli "x".
+# SQL najpierw wykonuje klauzulę WHERE, która filtruje wiersze, a następnie dokonuje agregacji za pomocą GROUP BY. Z tego powodu nie można używać funkcji agregujących w klauzuli WHERE. 
+# Zatem w powyższym zapytaniu zamiast klauzuli WHERE, należy użyć klauzuli HAVING, która służy do filtrowania wyników po ich pogrupowaniu i zastosowaniu funkcji agregujących, takich jak AVG, SUM, COUNT. Oznacza to, że klauzula HAVING jest używana do filtrowania grup, które powstały w wyniku użycia klauzuli GROUP BY.
+
+# Poprawione powyższe zapytanie SQL:
+
+SELECT 
+    customer_id,
+    AVG(revenue)
+FROM x
+GROUP BY customer_id
+HAVING AVG(revenue) > 75;
+
+# W przesłanym do mnie zapytaniu można dostrzec dwa aspekty, które można, ale nie trzeba, poprawić dla lepszej czytelności i zgodności z dobrymi praktykami.
+# - Brak wcięć po SELECT: Serwer baz danych ignoruje białe znaki (wcięcia, spacje, odstępy), co oznacza, że nie wpływają one na działanie zapytania. Dlatego w ramach dobrej praktyki można stosować wcięcia po SELECT. A odpowiednio sformatowany kod SQL zwiększa jego czytelność, co ułatwia jego zrozumienie i debugowanie.
+# - Brak średnika (;) na końcu zapytania: W większości narzędzi do zarządzania bazami danych średnik (;) jest stosowany jako separator między poszczególnymi poleceniami, aby serwer bazy danych mógł je wykonać jedno po drugim. Średnik (;) jest zatem zazwyczaj wymagany do oznaczenia nim końca zapytania. Dla pojedynczego zapytania średnik (;) nie jest obowiązkowy, chociaż jego użycie jest dobrą praktyką.
